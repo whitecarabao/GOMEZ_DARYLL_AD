@@ -1,3 +1,26 @@
+#Daryll's Nest.JS Assignment Repo Folder
+## _For Nest-related API Assignments_
+
+
+
+This folder should have the following "services":
+
+*- hello* - will greet you good morning/afternoon/evening with your name.
+
+```http://localhost:3000/exercise3/hello/Daryll```
+ 
+*- prime* - will return whether a number is a prime or not in the browser
+
+```http://localhost:3000/exercise3/prime/1```
+
+*- loopsTriangles* - generates triangles in Console AND Browser (much asterisks, very many line breaks hehe <br>
+
+```http://localhost:3000/exercise3/loopsTriangle/10```
+
+
+#Nest.js README will appear below as follows
+
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo_text.svg" width="320" alt="Nest Logo" /></a>
 </p>
