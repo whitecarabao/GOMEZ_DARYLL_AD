@@ -1,19 +1,42 @@
+import { CRUDReturn } from "./crud_return.interface";
+import { Helper } from "./helper";
+
 export class User {
-    private id: number;
+    private id: string;
     private name: string;
     private age:number;
     private email:string;
     private password: string;
 
-    constructor(id:number,name:string,age:number,email:string,password:string){
-        this.id=id;
+    constructor(name:string,age:number,email:string,password:string){
+        this.id=Helper.generateUID();
         this.name=name;
         this.age=age;
         this.email = email;
         this.password = password;
+        
+        
     }
 
-    login(email:string, password:string){
+
+    crudPusher(): CRUDReturn{
+        if(Helper.validBody(this.toJson())){
+            console.log("Pushing: " + this.toJson());
+        return {success: true, data: this.toJson()};   
+        } else{
+            return {success: false, data: "Body not valid!"};
+        } 
+    }
+
+  
+
+
+    overrideUUID(oldID: string){
+        console.log("!! OVERRIDING ID OF: " + this.id +" TO: "+ oldID);
+        this.id = oldID;
+    }
+
+    /*login(email:string, password:string){
         if(this.email === email && this.password === password){
             return true;
         }
@@ -23,6 +46,19 @@ export class User {
         
         //return true or false
     }
+    */
+
+    login(password: string): CRUDReturn {
+        try {
+          if (this.password === password) {
+            return { success: true, data: this.toJson() };
+          } else {
+            throw new Error(`${this.email} login fail, password does not match`);
+          }
+        } catch (error) {
+          return { success: false, data: error.message };
+        }
+      }
 
     userPrompt(){
         //console.log(`${this.id}:${this.name}:${this.email}`);
@@ -30,7 +66,7 @@ export class User {
     }
 
     checkAtt(value:string){
-        if(parseInt(value) == this.id){
+        if(value == this.id){
             return true;
         }
 
@@ -50,6 +86,30 @@ export class User {
             return false;
         }
     }
+
+    setAtt(value: string, att: string){
+        if(att == "id"){
+            this.id = value; 
+        }
+        if(att == "name"){
+            this.name = value; 
+
+        }
+
+        if(att == "email"){
+            this.email = value; 
+        }
+
+        if(att == "password"){
+            this.password = value; 
+        }
+
+        if(att == "age"){
+            var parsedAge = parseInt(value);
+            this.age = parsedAge; 
+        }
+        console.log("Att: " + att +"\nValue: " + value);
+    }
     toJson(){
         return {
             id: this.id,
@@ -59,10 +119,14 @@ export class User {
         }
     }
 
+
+
     passwordPusher(){
         //this is just for the patch function forgive me :(
 
-        return this.password;
+        return {
+            password: this.password}
+            
     }
     
  

@@ -12,7 +12,8 @@ constructor(private readonly userCons: UserService){}
     @Post('/register/')
     regUser(@Body() user:any ){
     console.log(user);
-    this.userCons.addUser(user);
+    return this.userCons.addUser(user);
+    
     }
 
     @Get('/all/')
@@ -23,62 +24,61 @@ constructor(private readonly userCons: UserService){}
 
     @Get('/:userID')
     userQuery(@Param('userID') userID: string){
-        var parsedID:number = parseInt(userID);
-        //console.log("Yoohoo!" + parsedID);
-       // console.log(this.userCons.userQuery(parsedID));
-       
-       return "User Information Query via ID <br>" + this.userCons.userQuery(parsedID)  + "<br> ------------- <br>End of data query."
-        
+        return this.userCons.userQuery(userID);
     }
 
     @Put('/:userID')
     amendData(@Param('userID') userID: string, @Body() user:any){
-        var parsedID : number = parseInt(userID);
-        if(this.userCons.chkAccExists(parsedID)){
-        return this.userCons.editUserData(user, parsedID);
+        
+        if(this.userCons.chkAccExists(userID)){
+        return this.userCons.editUserData(user, userID);
         }
         else{
             return{
-                error: "ID_NOT_FOUND",
-                message: "No account with ID: " + parsedID + " exists in the system."
+                success: false,
+                data: "No account with ID: " + userID + " exists in the system."
             }
         }
     }
 
     @Delete('/:userID')
     deleteAcc(@Param('userID') userID: string){
-        var parsedID = parseInt(userID);
+        
 
-        if(this.userCons.chkAccExists(parsedID) == true){
-        this.userCons.deleteAccount(parsedID);
-        return "Account ID: [" + parsedID +"] successfully removed from our system!"
+        if(this.userCons.chkAccExists(userID) == true){
+
+        //var tempCopy: User = this.userCons.users.get(this.userCons.getKey(userID));
+        this.userCons.deleteAccount(userID);
+        this.userCons.users.delete(userID);
+        return {success: true, data: "SUCCESS"};
         }
 
         else{
-        return "Deletion of Account with Account ID: [" + parsedID + "] could not be processed."
+        return {success: false, data: "ACCOUNT_DOES_NOT_EXIST"}
         }
     }
 
     @Post('/login')
     authProcess(@Body() body:any){
+        console.log(body);
         return this.userCons.authFunction(body);
     }
     
 
     @Patch('/:userID')
     patchCreds(@Param('userID') userID: string, @Body() userBody:any){
-        var parsedID = parseInt(userID);
+      
         //console.log("Controller PATCH PARAM: " +parsedID);
-        if(this.userCons.chkAccExists(parsedID)){
-
+        if(this.userCons.chkAccExists(userID)){
+        console.log("PATCHING ACCOUNT WITH ID: " + userID);
         
-        return this.userCons.patchFunc(parsedID, userBody);
+        return this.userCons.patchFunc(userID, userBody);
         
         }
         else{
             return{
-                error: "ID_NOT_FOUND",
-                message: "No account with ID: " + parsedID + " exists in the system."
+                success: false,
+                data: "No account with ID: " + userID + " exists in the system."
             }
         }
     }
@@ -86,7 +86,7 @@ constructor(private readonly userCons: UserService){}
     @Get('/search/:term')
     wideSearch(@Param('term') term: string){
         console.log("Searching for term: " + term);
-    return "Search System via Attribute<br><br>" + this.userCons.broadSearch(term);
+    return this.userCons.broadSearch(term);
     }
 
     
