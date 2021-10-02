@@ -221,13 +221,16 @@ export class UserService {
         console.log(oldUser.toJson());
         for(const iter1 of this.users.values()){
             if(iter1.toJson().email === userBody?.email){
-                return {success: false, data: "EMAIL_EXISTS!"}
+                return {success: false, data: "PATCH_ERROR_EMAIL_EXISTS!"}
             }
         }
         if(userBody?.name != undefined && typeof userBody?.name == "string"){
             newPatch = new User(userBody?.name, oldUser.toJson().age, oldUser.toJson().email, oldUser.passwordPusher().password);
             this.users.set(id, newPatch);
             this.users.get(id).overrideUUID(id);
+            console.log("NAME_CHANGED_PATCH");
+
+            oldUser = newPatch;
             //oldUser.toJson().name = userBody?.name;
             //oldUser.toJson().email = oldUser.toJson().email;
             //oldUser.toJson().age = oldUser.toJson().age;
@@ -238,10 +241,12 @@ export class UserService {
 
         if(userBody?.age != undefined && typeof userBody?.age == "number"){
 
-            
+            //this.users.delete(id);
             newPatch = new User(oldUser.toJson().name, userBody?.age, oldUser.toJson().email, oldUser.passwordPusher().password);
             this.users.set(id, newPatch);
             this.users.get(id).overrideUUID(id);
+            console.log("AGE_PATCH_CHANGE");
+            oldUser = newPatch;
             //oldUser.toJson().age = userBody?.age;
             //oldUser.passwordPusher().password = oldUser.passwordPusher().password;
             //oldUser.toJson().name = oldUser.toJson().name;
@@ -257,6 +262,8 @@ export class UserService {
             this.users.set(id, newPatch);
             this.users.get(id).overrideUUID(id);
             this.users.get(id).toJson().email = userBody?.email;
+            console.log("EMAIL_PATCH_CHANGE");
+            oldUser = newPatch;
             //this.editUserData(newPatch, id);
             //oldUser.toJson().id = oldUser.toJson().id;
             //oldUser.toJson().age = oldUser.toJson().age;
@@ -273,8 +280,10 @@ export class UserService {
             this.users.set(id, newPatch);
             this.users.get(id).overrideUUID(id);
             this.users.get(id).passwordPusher().password = userBody?.password;
+            console.log("PASSWORD_PATCHED");
+            
             //this.editUserData(newPatch, id);
-
+        oldUser = newPatch;
             //oldUser.passwordPusher().password = userBody?.password;
             //oldUser.toJson().name = oldUser.toJson().name;
             //oldUser.toJson().age = oldUser.toJson().age;
@@ -287,7 +296,7 @@ export class UserService {
 
             //newPatch = new User(oldUser.toJson().name, oldUser.toJson().age, oldUser.toJson().email, oldUser.passwordPusher());
             //this.users.set(this.getKey(id), newPatch);
-            //oldUser = newPatch;
+            oldUser = newPatch;
             console.log("Old UUID was: " + oldUser.toJson().id);
             oldUser.overrideUUID(userBody?.id);
             console.log("New UUID is: " + newPatch.toJson().id);
