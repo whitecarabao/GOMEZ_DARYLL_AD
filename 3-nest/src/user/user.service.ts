@@ -3,434 +3,515 @@ import { randomInt, randomUUID } from 'crypto';
 import { max } from 'rxjs';
 import { User } from './info.struct';
 import { v4 as uuidv4 } from 'uuid';
-import {Helper} from './Helper'
+import { Helper } from './Helper';
 import { CRUDReturn } from './crud_return.interface';
+import * as admin from 'firebase-admin';
+import { database } from 'firebase-admin';
+import { DH_CHECK_P_NOT_PRIME } from 'constants';
+import { resourceLimits } from 'worker_threads';
 
 @Injectable()
 export class UserService {
+  private DB = admin.firestore();
 
-    seqNum = 0;
-    users: Map<string, User> = new Map<string, User>();
+  seqNum = 0;
+  users: Map<string, User> = new Map<string, User>();
 
-    getRandomInt(min, max) {
+  constructor() {
+    this.users = Helper.populate();
+    /*this.users.forEach((user) => {
+      this.commit(user, 'none', user.toJsonSecure().id);
+    });*/
 
-        min = Math.ceil(min);
-        max = Math.floor(max);
 
-        return Math.floor(Math.random()* (max - min) + min) ;
+    //inefficent way of committing prepopped users in the db in sequence
+    for(const leanne of this.users.values()){
+        if(leanne.toJson().name === "Leanne Graham"){
+            this.commit(leanne,"none",leanne.toJson().id);
+        }
+
+    }
+
+    for(const ervin of this.users.values()){
+        if(ervin.toJson().name === "Ervin Howell"){
+            this.commit(ervin,"none",ervin.toJson().id);
+        }
+    }
+
+    for(const nathan of this.users.values()){
+        if(nathan.toJson().name === "Nathan Plains"){
+            this.commit(nathan,"none",nathan.toJson().id);
+        }
+    }
+
+    for(const patricia of this.users.values()){
+        if(patricia.toJson().name === "Patricia Lebsack"){
+            this.commit(patricia,"none",patricia.toJson().id);
+        }
+    }
+    this.printAllUsers();
+    //var dbIterVar = await this.DB.collection('user').listDocuments();
+
+    // this.populate();
+  }
+
+  async addUser(body: any): Promise<CRUDReturn> {
+    try {
+      var bodyOK: boolean = Helper.validBody(body).valid;
+      if (bodyOK) {
+        if ((await this.emailExists(body.email)) === false) {
+          if (this.validateBody(body) == true) {
+            var usrHldr: User = new User(
+              body.name,
+              body.age,
+              body.email,
+              body.password,
+              body?.id,
+            );
+          }
+        }
+        if (await this.commit(usrHldr, 'none', usrHldr.toJsonSecure().id)) {
+          return {
+            success: true,
+            data: usrHldr.toJson(),
+          };
+        }
+      } else {
+        return {
+          success: false,
+          data: 'Email: ' + body.email + ' already exists in database',
+        };
+      }
+    } catch (e) {
+      return { success: false, data: 'ERROR REGISTERING ACCOUNT' };
+    }
+  }
+
+  async commit(usr: User, option?: string, id?: string): Promise<CRUDReturn> {
+    try {
+      if (option === 'patchMode') {
+      }
+      var DB = admin.firestore();
+      var emEx = this.emailExists(usr.toJson().email);
+      if ((await emEx) === false) {
+        var res = await DB.collection('user').doc(id).set(usr.toJsonSecure());
+        console.log(
+          'Email [' + usr.toJson().email + '] does not exist. Committing...',
+        );
+        return { success: true, data: usr.toJson() };
+      } else {
+        console.log(
+          'Email [' + usr.toJson().email + '] exists. Not committing',
+        );
+      }
+    } catch (error) {
+      console.log(error);
+      return { success: false, data: error.message };
+    }
+  }
+
+  async getAllUserObj(): Promise<Array<User>> {
+    var res: Array<User> = [];
+    try {
+      var dbDat: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData> =
+        await this.DB.collection('user').get();
+
+      dbDat.forEach((doc) => {
+        if (doc.exists) {
+          var data = doc.data();
+          res.push(
+            new User(
+              data['name'],
+              data['age'],
+              data['email'],
+              data['password'],
+              data['id'],
+            ),
+          );
+        }
+      });
+      return res;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async printAllUsers(): Promise<CRUDReturn> {
+    var res: Array<any> = [];
+    try {
+      var allUsr = await this.getAllUserObj();
+      allUsr.forEach((user) => {
+        res.push(user.toJsonSecure());
+      });
+      return { success: true, data: res };
+    } catch (e) {
+      return { success: false, data: e };
+    }
+  }
+
+  /*async printAllUsers() {
+    var stringBuilder = [];
+    var db: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData> =
+      await this.DB.collection('user').get();
+    db.forEach((doc) => {
+      if (doc.exists) {
+        stringBuilder.push({
+          id: doc.id,
+          name: doc.data()['name'],
+          age: doc.data()['age'],
+          email: doc.data()['email'],
+        });
+      }
+    });
+
+    //for (const user of this.users.values()) {
+    //   stringBuilder.push(user.toJson());
+    //}
+    console.log(stringBuilder);
+    return { success: true, data: stringBuilder };
+  }
+  */
+
+  async userQuery(query: string): Promise<CRUDReturn> {
+    try {
+      var resulta = await this.DB.collection('user').doc(query).get();
+      if (resulta.exists) {
+        return {
+          success: true,
+          data: resulta.data(),
+        };
+      } else {
+        return {
+          success: false,
+          data: `User ${query} does not exist within the database`,
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      return {
+        success: false,
+        data: error,
+      };
+    }
+  }
+
+  async checkExists(body: any): Promise<CRUDReturn> {
+    try {
+      var dbIter = await this.DB.collection('user').get();
+
+      for (const dbIterVar of dbIter.docs) {
+        if (body.id === dbIterVar.id) {
+          return { success: true, data: dbIterVar.data() };
+        }
       }
 
-    constructor(){
-        this.users = Helper.populate();
-       // this.populate();
+      return { success: false, data: 'DOES NOT EXIST' };
+    } catch (e) {
+      return { success: false, data: 'ERROR_CHKEXISTS' };
+    }
+  }
+
+  async editUserData(user: any, id: string): Promise<CRUDReturn> {
+    try {
+      var validPutBody = await Helper.validBodyPut(user).valid;
+
+      if ((await this.userQuery(id)).success == true) {
+        if (validPutBody == true) {
+          if ((await this.emailExists(user?.email)) == false) {
+            var db = this.DB.collection('user').doc(id);
+            var usr: User = new User(
+              user.name,
+              user.age,
+              user.email,
+              user.password,
+              id,
+            );
+            db.update(usr.toJsonSecure());
+            console.log(usr.toJson());
+            return { success: true, data: usr.toJson() };
+          } else {
+            return { success: false, data: 'EMAIL EXISTS' };
+          }
+        } else {
+          return { success: false, data: Helper.validBodyPut(user).data };
+        }
+      } else {
+        return { success: false, data: 'ACC_NON_EXISTENT' };
+      }
+    } catch (e) {
+      return { success: false, data: 'ERROR!' };
+    }
+  }
+
+  async deleteAccount(id: string): Promise<CRUDReturn> {
+    try {
+      var delDbSearcher = await this.DB.collection('user').get();
+      for (const delDoc of delDbSearcher.docs) {
+        if (delDoc.id === id) {
+          const deletedDocCpy = delDoc.data();
+          this.DB.collection('user').doc(delDoc.id).delete();
+          return { success: true, data: deletedDocCpy };
+        }
+      }
+      return { success: false, data: 'ACC_NOT_FOUND' };
+    } catch (err) {
+      return { success: false, data: `${err.message}` };
+    }
+  }
+
+  async authFunction(body: any) {
+    try {
+      var dbDocIter = await this.DB.collection('user').get();
+
+      for (const authDocs of dbDocIter.docs) {
+        if (
+          authDocs.data()['email'] == body.email &&
+          authDocs.data()['password'] != body.password
+        ) {
+          return { success: false, data: 'WRONG PASSWORD!' };
+        }
+
+        if (
+          authDocs.data()['password'] == body.password &&
+          authDocs.data()['email'] == body.email
+        ) {
+          return { success: true, data: authDocs.data() };
+        }
+      }
+      return { success: false, data: 'ACCOUNT_NON_EXISTENT!' };
+    } catch (err) {}
+
+    return { success: false, data: 'LOGIN_FAILED' };
+  }
+
+  async patchFunc(id: string, userBody: any): Promise<CRUDReturn> {
+    try {
+      var changeArray = '';
+
+      //if(typeof userBody?.email != "string" || typeof userBody?.name != "string" ||
+      //  typeof userBody?.password != "string" || typeof userBody?.age != "number"  ) {
+      //    return {success: false, data: "INVALID OBJECT TYPE"};
+      //}
+
+      if (
+        userBody?.password != undefined &&
+        typeof userBody?.password != 'string'
+      ) {
+        return { success: false, data: 'PASSWRD_VALUE_TYPE_MISMATCH' };
+      }
+      if (userBody?.name != undefined && typeof userBody?.name != 'string') {
+        return { success: false, data: 'NAME_VALUE_TYPE_MISMATCH' };
+      }
+      if (userBody?.email != undefined && typeof userBody?.email != 'string') {
+        return { success: false, data: 'EMAIL_VALUE_TYPE_MISMATCH' };
+      }
+      if (userBody?.age != undefined && typeof userBody?.age != 'number') {
+        return { success: false, data: 'AGE_VALUE_TYPE_MISMATCH' };
+      }
+      if (userBody?.email != undefined) {
+        if ((await this.emailExists(userBody?.email)) == true) {
+          return { success: false, data: 'EMAIL_EXISTS_PATCH_FAILURE' };
+        }
+      }
+
+      var db = this.DB.collection('user').doc(id);
+      if ((await db.get()).exists == true) {
+        if (
+          userBody?.name != undefined &&
+          userBody?.name != null &&
+          typeof userBody?.name == 'string'
+        ) {
+          console.log('Name set to ' + userBody?.name);
+          changeArray += '\nName changed to' + userBody?.name;
+          await db.update({ name: userBody?.name });
+        }
+        if (
+          userBody?.email != undefined &&
+          userBody?.email != null &&
+          typeof userBody?.email == 'string'
+        ) {
+          console.log('Email is set to ' + userBody?.email);
+          changeArray += 'Email is set to ' + userBody?.email;
+          await db.update({ email: userBody?.email });
+        }
+        if (userBody?.age != undefined && typeof userBody?.age == 'number') {
+          console.log('Age set to ' + userBody?.age);
+          changeArray += 'Age is set to ' + userBody?.age;
+          await db.update({ age: userBody?.age });
+        }
+        if (
+          userBody?.password != undefined &&
+          userBody?.password != null &&
+          typeof userBody?.password == 'string'
+        ) {
+          console.log('Password set to ' + userBody?.password);
+          changeArray += 'Password changed.';
+          await db.update({ password: userBody?.password });
+        }
+
+        if (changeArray != null || changeArray != '') {
+          return {
+            success: true,
+            data: (await this.DB.collection('user').doc(id).get()).data(),
+          };
+        } else {
+          return { success: false, data: 'NO_PATCHED_FIELDS' };
+        }
+      } else {
+        return { success: false, data: 'ID_NOT_FOUND' };
+      }
+    } catch (e) {
+      return { success: false, data: e };
+    }
+  }
+
+  async broadSearch(searchString: string): Promise<CRUDReturn> {
+    try {
+      var dbDatQuery = await this.DB.collection('user').get();
+      var resArr = [];
+      resArr = [];
+      dbDatQuery.forEach(doc=>{
+        if (doc.data()['email'] == searchString) {
+          console.log('Email is searchString');
+          resArr.push(doc.data());
+          //return { success: true, data: doc.data() };
+        }
+        if (doc.data()['name'] == searchString) {
+          console.log('Name is searchString');
+          resArr.push(doc.data());
+          //return { success: true, data: doc.data() };
+        }
+        if (doc.data()['id'] == searchString) {
+          console.log('Id is searchString');
+          resArr.push(doc.data());
+          //return { success: true, data: doc.data() };
+        }
+        if (doc.data()['age'] == searchString) {
+          console.log('Age is searchString');
+          resArr.push(doc.data());
+          //return { success: true, data: doc.data() };
+        }
+        if (resArr.length > 0) {
+            console.log(resArr);
+            return {success: true, data: resArr};
+        }
+       
+      }
+      )
+      if (resArr.length > 0) {
+        console.log(resArr);
+        return {success: true, data: resArr};
+    }
+    else{
+        return {success: false, data:"NOT_FOUND!"};
     }
 
-
-
-
-
-
-    addUser(user: any){
-        var newUser: User;
-        console.log("Hello!");
-        console.log("Before Creation, current User Key: " + this.users.size);
-        if(this.validateBody(user) == true){
-                newUser = new User(user?.name, user?.age, user?.email, user?.password);
-                this.users.set(newUser.toJson().id, newUser); 
-                console.log("Key Count: HEllo!: " + this.users.size);
-                return {success: true, data: newUser.toJson()};
-            
-        }
       
-        
-        else{
-            return this.validateBody(user);
-        }
-       
+    } catch (e) {
+      return { success: false, data: 'NOT FOUND' };
     }
-    printAllUsers(){
+  }
 
-        var stringBuilder = [];
-        for (const user of this.users.values()){
-          stringBuilder.push(user.toJson());
-            
+  validateBody(body: any) {
+    var stringBuilder;
+
+    if (
+      typeof body?.age == 'number' &&
+      typeof body?.name == 'string' &&
+      typeof body?.email == 'string' &&
+      typeof body?.password == 'string'
+    ) {
+      console.log('Valid, kunuhay - Types Match!');
+      if (
+        body?.name != 'undefined' &&
+        body?.age != 'undefined' &&
+        body?.email != 'undefined' &&
+        body?.password != 'undefined'
+      ) {
+        console.log('All fields have content - Body fields complete!');
+        for (const iter1 of this.users.values()) {
+          if (iter1.toJson().email === body?.email) {
+            return { success: false, data: 'EMAIL_EXISTS!' };
+          }
         }
-        console.log(stringBuilder);
-        return {success: true, data: stringBuilder};
+        return true;
+      }
+    } else {
+      //oh dear a heap of boilerplate
+
+      if (typeof body?.name == 'undefined') {
+        return { success: false, data: 'NO_NAME_VALUE' };
+      }
+
+      if (typeof body?.age == 'undefined') {
+        return { success: false, data: 'NO_AGE_VALUE' };
+      }
+
+      if (typeof body?.email == 'undefined') {
+        return { success: false, data: 'NO_EMAIL_VALUE' };
+      }
+
+      if (typeof body?.password == 'undefined') {
+        return { success: false, data: 'NO_PASSWORD_VALUE' };
+      }
+
+      //phew, now let's move onto incompatible datatype checking
+
+      if (typeof body?.name != 'string') {
+        stringBuilder += ' - Name value is not a String!';
+        return { success: false, data: 'NAME_VALUE_TYPE_MISMATCH' };
+      }
+
+      if (typeof body?.age != 'number') {
+        stringBuilder += ' - Age value is not a number!';
+        return { success: false, data: 'AGE_VALUE_TYPE_MISMATCH' };
+      }
+
+      if (typeof body?.email != 'string') {
+        stringBuilder += ' - Email value is not a string!';
+        return { success: false, data: 'EMAIL_VALUE_TYPE_MISMATCH' };
+      }
+
+      if (typeof body?.password != 'string') {
+        stringBuilder += ' - Password value is not a string!';
+        return { success: false, data: 'PASSWORD_VALUE_TYPE_MISMATCH' };
+      }
+
+      console.log(stringBuilder);
+      return { success: false, data: 'UNDEFINED_VALUE_TYPE_MISMATCH' };
     }
+  }
 
-   userQuery(query: string){
-       for(const iter1 of this.users.values()){
-           //console.log(iter1.toJson().id);
-           if(iter1.toJson().id === query){
-              
-
-            
-            
-              // return "ID Number: " + iter1.toJson().id + "<br>Full Name: " + iter1.toJson().name + "<br>Age: " + iter1.toJson().age + "<br>Email: " + iter1.toJson().email + iter1.toJson();
-                return iter1.crudPusher();
-            }
-       }
-      
-        return {success: false, 
-                data: "USER_ID_INVALID_OR_DOES_NOT_EXIST"
-            };
-    
-       
+  async emailExists(
+    email: string,
+    options?: { exceptionId: string },
+  ): Promise<boolean> {
+    try {
+      var DB = admin.firestore();
+      var usrRes = await DB.collection('user')
+        .where('email', '==', email)
+        .get();
+      console.log('Are results empty?');
+      console.log(usrRes.empty);
+      if (usrRes.empty) return false;
+      for (const doc of usrRes.docs) {
+        console.log(doc.data());
+        console.log('Are opts defined?');
+        console.log(options != undefined);
+        if (options != undefined) {
+          if (doc.id == options?.exceptionId) continue;
+        }
+        if (doc.data()['email'] === email) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.log('Email exists subfunction error');
+      console.log(error.message);
+      return false;
     }
-       
-
-    getKey(id:string){
-
-        var ctr = 1;
-        for(const iter1 of this.users.keys()){
-            if(this.users.get(iter1).toJson().id == id){
-                console.log("Key is: " + iter1);
-                return iter1;
-            }
-            
-            //ctr++;
-            
-        }
-
-        
-        console.log("Key [" + id + "] not found?");
-        return null; 
-    }
-
-    editUserData(user: any, id: string){
-
-        var patchUser:User;
-        var oldUser: User = this.users.get(this.getKey(id));
-        var oldID = id;
-        console.log("DEBUG ID: " + oldID);
-
-        patchUser = new User(user?.name, user?.age, user?.email, user?.password);
-        //this.users.set(this.getKey(id), patchUser);
-        console.log(this.users.get(this.getKey(id)).toJson());
-        for(const iter1 of this.users.values()){
-            if(iter1.toJson().email === user?.email){
-                return {success: false, data: "EMAIL_EXISTS!"}
-            }
-        }
-        console.log("Original User: \nName: " + oldUser.toJson().name + "\nAge: " + oldUser.toJson().age + "\nEmail: " + oldUser.toJson().email + "\n\nNew User: \nName: " + patchUser.toJson().name + "\nAge: " + patchUser.toJson().age + "\nEmail: " + patchUser.toJson().email);
-        if (patchUser.toJson().name == undefined || patchUser.toJson().age == undefined || patchUser.toJson().email == undefined || patchUser.toJson().id == undefined){
-            console.log("Incomplete data entry.");
-            return {success: false, data: "Incomplete Data Entry"};
-        }
-        
-        if(patchUser.toJson().name == undefined || typeof patchUser.toJson().name != "string"){
-            return {success: false, data: "Error - Name field is BLANK."};
-        }
-
-        if(patchUser.toJson().age == undefined || typeof patchUser.toJson().age != "number"){
-            return {success: false, data: "Error - Age field is BLANK"};
-        }
-
-        if(patchUser.toJson().email == undefined || typeof patchUser.toJson().email != "string"){
-            return {success: false, data:"Error - Email field is BLANK or NOT A STRING"};
-        }
-
-        if(user?.password == undefined || typeof user?.password != "string"){
-            return {success: false, data:"Error - Password is BLANK or NOT A STRING"};
-        }
-        this.users.set(oldID, patchUser);
-        patchUser.overrideUUID(oldID);
-        return {success: true, data: patchUser.toJson()};
-    }
-
-
-    chkAccExists(id:string){
-        if(this.users.get(this.getKey(id)) === null || this.users.get(this.getKey(id)) === undefined){
-            return false;
-        }
-        else{
-           console.log("Account exists. Key: " + this.getKey(id))
-            return true;
-        }
-
-    }
-
-
-    deleteAccount(id:string): CRUDReturn{
-            
-        try{
-
-            for(const detIter of this.users.values()){
-                if(id == detIter.toJson().id){
-                    this.users.delete(id);
-                    console.log("Deleted ID: " + id);
-                    console.log(detIter.toJson());
-                    return{
-                        success: true,
-                        data: detIter.toJson()
-                    }
-                }
-                
-
-            }throw new Error("No Account found!")
-    }catch(err){
-        return {success: false, data: `${err.message}`};
-    }
+  }
 }
-
-      
-   
-
-
-
-   authFunction(body:any){
-       /*for(const authIter of this.users.values()){
-           if(authIter.login(userCred?.password)){
-               return{
-               success: true,
-               message: "AUTH_SUCCESS"
-           }
-           }
-           else{
-               return {
-                success: false,
-                message: "AUTH_FAILURE"
-               }
-           
-       }
-       */
-       console.log("User Body: " + body);
-       for(const authIter of this.users.values()){
-            
-        if(authIter.toJson().email == body?.email){
-        return authIter.login(body?.password);
-         }
-    }
-
-        return {success: false, data: "LOGIN_FAILED"};
-    
-
-   }
-
-  
-    
-
-
-    patchFunc(id:string, userBody:any){
-
-        var stringBuilder;
-        stringBuilder = '';
-        var newPatch: User;
-        var oldUser: User = this.users.get(id);
-        console.log(oldUser.toJson());
-        for(const iter1 of this.users.values()){
-            if(iter1.toJson().email === userBody?.email){
-                return {success: false, data: "PATCH_ERROR_EMAIL_EXISTS!"}
-            }
-        }
-        if(userBody?.name != undefined && typeof userBody?.name == "string"){
-            newPatch = new User(userBody?.name, oldUser.toJson().age, oldUser.toJson().email, oldUser.passwordPusher().password);
-            this.users.set(id, newPatch);
-            this.users.get(id).overrideUUID(id);
-            console.log("NAME_CHANGED_PATCH");
-
-            oldUser = newPatch;
-            //oldUser.toJson().name = userBody?.name;
-            //oldUser.toJson().email = oldUser.toJson().email;
-            //oldUser.toJson().age = oldUser.toJson().age;
-            //oldUser.toJson().id = oldUser.toJson().id;
-            //oldUser.passwordPusher().password = oldUser.passwordPusher().password;
-            stringBuilder += "\n NAME CHANGED!";
-        }
-
-        if(userBody?.age != undefined && typeof userBody?.age == "number"){
-
-            //this.users.delete(id);
-            newPatch = new User(oldUser.toJson().name, userBody?.age, oldUser.toJson().email, oldUser.passwordPusher().password);
-            this.users.set(id, newPatch);
-            this.users.get(id).overrideUUID(id);
-            console.log("AGE_PATCH_CHANGE");
-            oldUser = newPatch;
-            //oldUser.toJson().age = userBody?.age;
-            //oldUser.passwordPusher().password = oldUser.passwordPusher().password;
-            //oldUser.toJson().name = oldUser.toJson().name;
-            //oldUser.toJson().email = oldUser.toJson().email;
-            //oldUser.toJson().id = oldUser.toJson().id;
-            stringBuilder += "AGE CHANGED";
-        }
-
-        if(userBody?.email != undefined && typeof userBody?.email == 'string'){
-            
-            //this.users.delete(id);
-            newPatch = new User(oldUser.toJson().name, oldUser.toJson().age, userBody?.email, oldUser.passwordPusher().password);//oldUser.toJson().email = userBody.email;
-            this.users.set(id, newPatch);
-            this.users.get(id).overrideUUID(id);
-            this.users.get(id).toJson().email = userBody?.email;
-            console.log("EMAIL_PATCH_CHANGE");
-            oldUser = newPatch;
-            //this.editUserData(newPatch, id);
-            //oldUser.toJson().id = oldUser.toJson().id;
-            //oldUser.toJson().age = oldUser.toJson().age;
-            //oldUser.passwordPusher().password = oldUser.passwordPusher().password;
-            //oldUser.toJson().name = oldUser.toJson().name;
-            stringBuilder += "EMAIL CHANGED";
-            
-
-        }
-
-        if(userBody?.password != undefined && typeof userBody?.password == 'string'){
-            //this.users.delete(id);
-            newPatch = new User(oldUser.toJson().name, oldUser.toJson().age, oldUser.toJson().email, userBody?.password);
-            this.users.set(id, newPatch);
-            this.users.get(id).overrideUUID(id);
-            this.users.get(id).passwordPusher().password = userBody?.password;
-            console.log("PASSWORD_PATCHED");
-            
-            //this.editUserData(newPatch, id);
-        oldUser = newPatch;
-            //oldUser.passwordPusher().password = userBody?.password;
-            //oldUser.toJson().name = oldUser.toJson().name;
-            //oldUser.toJson().age = oldUser.toJson().age;
-            //oldUser.toJson().email = oldUser.toJson().email;
-         stringBuilder += "PASSWORD CHANGED";
-
-        }
-
-        if(userBody?.id != undefined && typeof userBody?.id == "string"){
-
-            //newPatch = new User(oldUser.toJson().name, oldUser.toJson().age, oldUser.toJson().email, oldUser.passwordPusher());
-            //this.users.set(this.getKey(id), newPatch);
-            oldUser = newPatch;
-            console.log("Old UUID was: " + oldUser.toJson().id);
-            oldUser.overrideUUID(userBody?.id);
-            console.log("New UUID is: " + newPatch.toJson().id);
-            stringBuilder += "\n<br>ID: " + userBody?.id;
-
-        }
-
-      
-
-        if(stringBuilder == null || stringBuilder == ""){
-            return {success: false, data: "NO_CHANGES_MADE!"}
-        }
-        else{
-            return {success: true, data: this.users.get(id).toJson()};
-        }
-
-    }
-
-
-    broadSearch(searchString:string){
-        
-        for(const iter1 of this.users.values()){
-            //console.log(iter1.toJson().id);
-
-            
-            
-            if(iter1.toJson().name === searchString){
-               
-             
-                return iter1.toJson();
-           
-             }
-
-            if(iter1.toJson().age === parseInt(searchString)){
-
-                return iter1.crudPusher();
-            }
-
-            if(iter1.toJson().email === searchString){
-                return iter1.crudPusher();
-
-            }
-
-            if(iter1.toJson().id === searchString){
-                return iter1.crudPusher();
-            }
-        }
-        console.log(searchString + "NOT FOUND")
-        return {success: false, data: "NOT FOUND"};
-    }
-
-
-    emailChk(email:string){
-
-        for(const iter1 of this.users.values()){
-            if(iter1.toJson().email == email){
-                console.log("Email exists: " + email + "\nFrom account: " + iter1.toJson());
-                return false; //lol not unique, baka! >///<
-            }
-        }
-        return true; //is unique >:)
-    }
-
-
-    validateBody(body: any){
-
-        var stringBuilder;
-
-        if(typeof body?.age == "number" && typeof body?.name == "string" && typeof body?.email == "string" && typeof body?.password == "string"){
-            console.log("Valid, kunuhay - Types Match!");
-            if(body?.name != "undefined" && body?.age != "undefined" && body?.email != "undefined" && body?.password != "undefined"){
-                console.log("All fields have content - Body fields complete!");
-                for(const iter1 of this.users.values()){
-                    if(iter1.toJson().email === body?.email){
-                        return {success: false, data: "EMAIL_EXISTS!"}
-                    }
-                }
-                return true;
-            }
-        
-         }
-
-         else{
-
-            //oh dear a heap of boilerplate
-
-            
-
-             if(typeof body?.name == "undefined"){
-             return {success: false, data: "NO_NAME_VALUE"};
-             }
-
-             if(typeof body?.age == "undefined"){
-             return {success: false, data: "NO_AGE_VALUE"};
-             }
-
-             if(typeof body?.email == "undefined"){
-             return {success: false, data: "NO_EMAIL_VALUE"};
-             }
-
-             if(typeof body?.password == "undefined"){
-             return {success: false, data: "NO_PASSWORD_VALUE"};
-             }
-
-             //phew, now let's move onto incompatible datatype checking
-
-            
-
-             if(typeof body?.name != "string"){
-             stringBuilder += " - Name value is not a String!";
-             return {success: false, data: "NAME_VALUE_TYPE_MISMATCH"};
-             }
-
-             if(typeof body?.age != "number"){
-             stringBuilder += " - Age value is not a number!";
-             return {success: false, data: "AGE_VALUE_TYPE_MISMATCH"};
-             }
-
-             if(typeof body?.email != "string"){
-             stringBuilder += " - Email value is not a string!";
-             return{success: false, data: "EMAIL_VALUE_TYPE_MISMATCH"};
-             }
-
-             if(typeof body?.password != "string"){
-             stringBuilder += " - Password value is not a string!";
-             return {success: false, data: "PASSWORD_VALUE_TYPE_MISMATCH"};
-             }
-
-             
-             console.log(stringBuilder);
-             return {success: false, data: "UNDEFINED_VALUE_TYPE_MISMATCH"};
-
-         }
-
-    }
-    }
-
