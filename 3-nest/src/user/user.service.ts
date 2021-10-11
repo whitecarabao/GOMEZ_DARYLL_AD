@@ -17,7 +17,7 @@ export class UserService {
   seqNum = 0;
   users: Map<string, User> = new Map<string, User>();
 
-  constructor() {
+ constructor() {
     this.users = Helper.populate();
     /*this.users.forEach((user) => {
       this.commit(user, 'none', user.toJsonSecure().id);
@@ -25,9 +25,9 @@ export class UserService {
 
 
     //inefficent way of committing prepopped users in the db in sequence
-    for(const leanne of this.users.values()){
+    /*for(const leanne of this.users.values()){
         if(leanne.toJson().name === "Leanne Graham"){
-            this.commit(leanne,"none",leanne.toJson().id);
+           this.commit(leanne,"none",leanne.toJson().id);
         }
 
     }
@@ -49,6 +49,7 @@ export class UserService {
             this.commit(patricia,"none",patricia.toJson().id);
         }
     }
+    */
     this.printAllUsers();
     //var dbIterVar = await this.DB.collection('user').listDocuments();
 
