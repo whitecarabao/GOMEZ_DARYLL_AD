@@ -1,0 +1,43 @@
+/* You can add global styles to this file, and also import other style files */
+*{  
+    text-align: center;
+    font-family: 'Cabin', sans-serif;
+    
+    color: white;
+    }
+
+body{
+    
+    background-color: #0093E9;
+    background-image: linear-gradient(
+160deg, #0093E9 1%, #80D0C7 100%);
+}
+
+form{
+    margin: auto;
+}
+
+.button{
+    color: black;
+   
+}
+
+.txtinput{
+text-align: left;
+color: black;
+}
+
+h1{
+text-align: left;
+font-weight: bold;
+font-size: 40px;
+}
+h2{
+text-align: left;
+font-size: 15px;
+}
+
+p{
+    text-align: left;
+    font-size: 15px;
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;700&display=swap" rel="stylesheet">
+    </head>
+
+    <body>
+        <h1>User Administration Dashboard</h1>
+        <h2>*** Accounts List ***</h2>
+        <div class="table-wrapper">
+        <table class="fl-table">
+            <thead>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Email</th>
+                
+
+            </thead>
+            <tbody>
+              <tr>
+                <tr *ngFor = "let idIter of arrOfUsr">
+                    <td>{{idIter.id}}</td>
+                    <td>{{idIter.name}}</td>
+                    <td>{{idIter.age}}</td>
+                    <td>{{idIter.email}}</td>
+
+                </tr>
+                  
+  
+             
+               </tbody>
+        </table>
+        <button class="button" (click)="nav('login')">LOGOUT AND TERMINATE SESSION</button> &nbsp;&nbsp;&nbsp;&nbsp;
+        </div>
+    </body>
+
+

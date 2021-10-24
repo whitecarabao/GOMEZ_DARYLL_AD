@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;700&display=swap" rel="stylesheet">
+    </head>
+
+
+
+    <body>
+        <div class=form>
+            <h1>Welcome to GOMEZ DYNAMICS Pan-Pacific Operations</h1>
+            <h2>*** NOT SECURE - Please contact your local Operations Director for assistance ***</h2>
+            <p>
+               Connection status: Not connected to a GOMEZ DYNAMICS Federation Server!
+               <br>Running on a local server. 
+            </p>
+            
+            <p>
+                <label for="">Username:</label><br>
+                <input type="email" name="Username" class="txtinput" [formControl]="fcEmail"><br><br>
+                <label for="pwd">Password:</label><br>
+                <input type="password" name="Password" class="txtinput" [formControl]="fcPwd">
+            </p>
+            <br><br>
+            <button class="button" (click)="nav('register')">REGISTER</button> &nbsp;&nbsp;&nbsp;&nbsp;
+            <button class="button" (click)="login()">LOGIN</button>
+        </div>
+        {{requestResult | json}}
+        
+        <br>
+        <p>
+            Created by Daryll Gomez, all rights reserved. 2019-2021
+            
+        </p>
+    </body>
+

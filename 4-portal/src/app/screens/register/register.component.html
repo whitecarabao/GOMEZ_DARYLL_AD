@@ -1,0 +1,50 @@
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;700&display=swap" rel="stylesheet">
+    </head>
+
+
+
+    <body>
+        <form [formGroup] = "regForm" (ngSubmit)="onSubmit()">
+            <h1>Registration Form</h1>
+            <h2>Please ensure that all of the information that you input is correct and valid to the best of your abilities</h2>
+            <p>
+               
+               <br>Running on a local server. 
+            </p>
+            
+            <p>
+                <label for="">Name:</label><br>
+                <input type="email" name="Username" value="" class="txtinput" formControlName="fcName"/><br><br>
+                <label for="">Email:</label><br>
+                <input type="email" name="Username" value="" class="txtinput" formControlName="fcEmail"/><br><br>
+                <label for="age">Age:</label><br>
+                <input type="text" name="Age" value="" class="txtinput" formControlName="fcAge"/><br><br>
+                <label for="pwd">Password:</label><br>
+                <input type="password" name="Password" value="" class="txtinput" formControlName="fcPwd"/><br><br>
+                <label for="pwd">Confirm Password:</label><br>
+                <input type="password" name="Password" value="" class="txtinput" formControlName="fcVPwd"/><br><br>
+                
+               
+                
+            </p>
+
+            <br><br>
+            <button type="submit" [disabled]="!regForm.valid">
+                CREATE ACCOUNT
+              </button>
+              <button class="button" (click)="nav('login')">BACK TO LOGIN</button>
+        </form>
+        
+        <br>
+        <p>
+            Created by Daryll Gomez, all rights reserved. 2019-2021
+            
+        </p>
+    </body>
+
