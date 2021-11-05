@@ -3,6 +3,7 @@ import { FormControl, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import { environment } from 'src/environments/environment';
+import { TemplateParseResult } from '@angular/compiler';
 
 @Component({
   selector: 'app-login',
@@ -10,8 +11,13 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./login.component.scss'],
 })
 export class LoginComponent implements OnInit {
-  constructor(private router: Router, private api: HttpClient) {}
+  constructor(private router: Router, private api: HttpClient) {
+    this.checkComms();
+  }
 
+  showOk = true;
+  showAlert = true;
+  showPrompt = false;
   ngOnInit(): void {}
 
   fcEmail = new FormControl();
@@ -44,7 +50,29 @@ console.log("Hello!");
     //}
   }
 
+  async checkComms(){
+    var caller: any = await this.api
+      .get(environment.API_URL + '/user/all')
+      .toPromise().then(success => this.showOkPopup()).catch(err => this.showAlertPopup());
+    this.requestResult = caller;
+ 
+  }
   nav(destination: string) {
     this.router.navigate([destination]);
+  }
+
+  showAlertPopup(){
+    console.log("show alert triggered");
+    
+    this.showAlert = false;
+    this.showOk = true;
+    this.showPrompt = true;
+  }
+
+  showOkPopup(){
+    console.log("show ok triggered. showOk = " + this.showOk + " showAlert = " + this.showAlert);
+    this.showOk =false;
+    this.showAlert = true;
+    this.showPrompt = true;
   }
 }

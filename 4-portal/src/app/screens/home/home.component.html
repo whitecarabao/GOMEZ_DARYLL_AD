@@ -1,40 +1,275 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;700&display=swap" rel="stylesheet">
-    </head>
+  <script
+    src="https://kit.fontawesome.com/628c8d2499.js"
+    crossorigin="anonymous"
+  ></script>
+  <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
 
-    <body>
-        <h1>User Administration Dashboard</h1>
-        <h2>*** Accounts List ***</h2>
-        <div class="table-wrapper">
-        <table class="fl-table">
+  <body>
+    <h1>User Administration Dashboard</h1>
+    <h2>*** Accounts List ***</h2>
+    
+    <div ng-app="tableApp" ng-controller="UserController" class="table-wrapper">
+     
+     
+
+      <br />
+      <br />
+      <br />
+      <table class="fl-table">
+          <td>
+              <p>
+              WARNING: To search for a user, you will need to use complete terms. 
+              For example, searching for user with the name "Daryll Gomez", you must enter "Daryll Gomez"
+              </p>
+              <p><strong>Incomplete terms are not supported as of this time as fuzzy search was not a requirement.</strong></p>
+          </td>
+          <tr>
+          <th> <input
+            type="text"
+            ng-model="searchTerm"
+            id="searchBox"
+            placeholder="Enter Search Term here"
+            (change)=searchArrHandler();
+          />
+          &nbsp;&nbsp;
+          <button id="edit" class="button" (click)="searchArrHandler()">
+            SEARCH
+          </button></th>
+          </tr>
+          <thead>
+              <th>Search Users via complete terms</th>
+          </thead>
+      </table>
+      <table class="fl-table">
+        <thead>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Age</th>
+          <th>Email</th>
+          <th>Actions</th>
+        </thead>
+        <tbody>
+          <tr></tr>
+          <tr *ngFor="let idIter of arrOfUsr">
+            <td>{{ idIter.id }}</td>
+            <td>{{ idIter.name }}</td>
+            <td>{{ idIter.age }}</td>
+            <td>{{ idIter.email }}</td>
+            <div *ngIf = "hideActions">
+            <td>
+              <button id="remove" class="button" (click)="deleteRow(idIter.id)">
+                DELETE USER
+              </button>
+              &nbsp;
+              <button
+                id="edit"
+                class="button"
+                (click)="
+                  dispPlaceholders(
+                    idIter.id,
+                    idIter.name,
+                    idIter.age,
+                    idIter.email
+                  )
+                "
+              >
+                EDIT/PATCH
+              </button>
+            </td>
+            </div>
+          </tr>
+        </tbody>
+      </table>
+      <div *ngIf="!isShow">
+        <form [formGroup]="amendForm" (ngSubmit)="patchRow(tempID, tempName)">
+          <table class="fl-table">
             <thead>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Age</th>
-                <th>Email</th>
-                
-
+              <th colspan=2>Patching User Information for {{tempName}} {{"["+tempID+"]"}}"</th>
+            </thead>
+            <thead>
+              <th>Type/Field</th>
+              <th>Data</th>
             </thead>
             <tbody>
               <tr>
-                <tr *ngFor = "let idIter of arrOfUsr">
-                    <td>{{idIter.id}}</td>
-                    <td>{{idIter.name}}</td>
-                    <td>{{idIter.age}}</td>
-                    <td>{{idIter.email}}</td>
+                <td><label for="ID">ID: </label></td>
+                <td>
+                  <input type="text" class="patchTextBox" placeholder="{{ tempID }}" disabled />
+                </td>
+              </tr>
+              <tr>
+                <td><label for="ID">Name: </label></td>
+                <td>
+                  <input
+                    type="text"
+                    class="patchTextBox"
+                    placeholder="{{ tempName }}"
+                    formControlName="fcName"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td><label for="ID">Age: </label></td>
+                <td>
+                  <input
+                    type="text"
+                    class="patchTextBox"
+                    placeholder="{{ tempAge }}"
+                    formControlName="fcAge"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td><label for="ID">Email: </label></td>
+                <td>
+                  <input
+                    type="text"
+                    class="patchTextBox"
+                    placeholder="{{ tempEmail }}"
+                    formControlName="fcEmail"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td><label for="ID">Password: </label></td>
+                <td>
+                  <input
+                    type="text"
+                    class="patchTextBox"
+                    placeholder="Enter new password"
+                    formControlName="fcPwd"
+                  />
+                </td>
+              </tr>
 
-                </tr>
-                  
-  
-             
-               </tbody>
-        </table>
-        <button class="button" (click)="nav('login')">LOGOUT AND TERMINATE SESSION</button> &nbsp;&nbsp;&nbsp;&nbsp;
-        </div>
-    </body>
+              <td colspan="2">
+                <button type="submit" [disabled]="!amendForm.valid">
+                  CONFIRM CHANGES</button
+                >&nbsp;&nbsp;<button
+                  id="edit"
+                  class="button"
+                  (click)="leaveNoChange()"
+                >
+                  LEAVE WITHOUT CHANGES
+                </button>
+              </td>
+            </tbody>
+          </table>
+        </form>
+      </div>
+      <div *ngIf="!isShowManualForm">
+        <form [formGroup]="newRegManForm" (ngSubmit)="makeManAcc()">
+          <table class="fl-table">
+            <thead>
+              <th colspan=2>Manual User Registration System</th>
+            </thead>
+            <thead>
+              <th>Type/Field</th>
+              <th>Data</th>
+            </thead>
+            <tbody>
+              <tr>
+                <td><label for="ID">ID: </label></td>
+                <td>
+                  <input type="text" class="patchTextBox" placeholder="TO BE GENERATED" disabled />
+                </td>
+              </tr>
+              <tr>
+                <td><label for="ID">Name: </label></td>
+                <td>
+                  <input
+                    type="text"
+                    class="patchTextBox"
+                    placeholder="Input Name"
+                    formControlName="newFcName"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td><label for="ID">Age: </label></td>
+                <td>
+                  <input
+                    type="text"
+                    class="patchTextBox"
+                    placeholder="Input Age"
+                    formControlName="newFcAge"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td><label for="ID">Email: </label></td>
+                <td>
+                  <input
+                    type="text"
+                    class="patchTextBox"
+                    placeholder="Input Email"
+                    formControlName="newFcEmail"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td><label for="ID">Password: </label></td>
+                <td>
+                  <input
+                    type="text"
+                    class="patchTextBox"
+                    placeholder="Enter Temporary Password"
+                    formControlName="newFcPwd"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td><label for="ID">Password: </label></td>
+                <td>
+                  <input
+                    type="text"
+                    class="patchTextBox"
+                    placeholder="Enter Temporary Password"
+                    formControlName="newFcVPwd"
+                  />
+                </td>
+              </tr>
 
-
+              <td colspan="2">
+                <button type="submit" [disabled]="!newRegManForm.valid">
+                  CONFIRM CHANGES</button
+                >&nbsp;&nbsp;<button
+                  id="edit"
+                  class="button"
+                  (click)="toggleNewManForm()"
+                >
+                  LEAVE WITHOUT CHANGES
+                </button>
+              </td>
+            </tbody>
+          </table>
+        </form>
+      </div>
+      <table class="fl-table">
+        <thead>
+          <th>Administration Tools</th>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              &nbsp; <button id="edit" class="button" (click)="toggleNewManForm()">MANUAL USER DATA ENTRY</button> &nbsp;
+              <button class="button" (click)="nav('login')">
+                LOGOUT AND TERMINATE SESSION
+              </button>
+              &nbsp; <button class="button" (click)="refresh()">REFRESH</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>

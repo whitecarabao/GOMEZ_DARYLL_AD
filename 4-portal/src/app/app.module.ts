@@ -8,13 +8,18 @@ import { HomeComponent } from './screens/home/home.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RegisterComponent } from './screens/register/register.component';
 import { HttpClientModule } from '@angular/common/http';
+import { SearchComponent } from './screens/search/search.component';
+
+
 
 @NgModule({
   declarations: [
     AppComponent,
     LoginComponent,
     HomeComponent,
-    RegisterComponent
+    RegisterComponent,
+    SearchComponent
+
   ],
   imports: [
     HttpClientModule,

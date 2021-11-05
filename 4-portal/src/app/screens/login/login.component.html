@@ -5,7 +5,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;700&display=swap" rel="stylesheet">
     </head>
+    <div class="alert" *ngIf="!showAlert">
+        <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+        <strong>Warning! Refresh required!</strong> <br>"Cannot establish a connection to API and Google Firestore. Essential systems not accessible at this time."<br>Please check Nest and Firestore and try again.
+      </div>
 
+      <div class="connecting" *ngIf="!showPrompt">
+        <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+        <strong>Establishing connection to API and Firestore..</strong> <br>"This make take a while. Please wait before processing a request."
+      </div>
+
+      <div class="green" *ngIf="!showOk">
+        <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+        <strong>Connection established!</strong> <br>"Valid data response from API and Firestore confirmed."<br>Request queries may take a few seconds to resolve. Please wait inbetween queries.
+      </div>
 
 
     <body>
@@ -13,22 +26,21 @@
             <h1>Welcome to GOMEZ DYNAMICS Pan-Pacific Operations</h1>
             <h2>*** NOT SECURE - Please contact your local Operations Director for assistance ***</h2>
             <p>
-               Connection status: Not connected to a GOMEZ DYNAMICS Federation Server!
-               <br>Running on a local server. 
+               
+               <br>
             </p>
             
             <p>
                 <label for="">Username:</label><br>
                 <input type="email" name="Username" class="txtinput" [formControl]="fcEmail"><br><br>
                 <label for="pwd">Password:</label><br>
-                <input type="password" name="Password" class="txtinput" [formControl]="fcPwd">
+                <input type="password" name="Password" class="txtinput" [formControl]="fcPwd"><br><br>
+                <button class="button" (click)="nav('register')">REGISTER</button> &nbsp;&nbsp;&nbsp;&nbsp;
+            <button class="button" (click)="login()">LOGIN</button>
             </p>
             <br><br>
-            <button class="button" (click)="nav('register')">REGISTER</button> &nbsp;&nbsp;&nbsp;&nbsp;
-            <button class="button" (click)="login()">LOGIN</button>
+            
         </div>
-        {{requestResult | json}}
-        
         <br>
         <p>
             Created by Daryll Gomez, all rights reserved. 2019-2021

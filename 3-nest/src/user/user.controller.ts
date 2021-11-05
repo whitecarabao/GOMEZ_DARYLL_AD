@@ -37,7 +37,7 @@ constructor(private readonly userCons: UserService){}
     @Delete('/:userID')
     deleteAcc(@Param('userID') userID: string){
         
-
+        console.log("deleting user " + userID);
         return this.userCons.deleteAccount(userID);
        
         
